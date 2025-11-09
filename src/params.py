@@ -10,6 +10,7 @@ class Inlet:
     m_dot_kg_s: float = 5e-3 / 60.0   # 5 g/min
     rho_vr: float = 1050.0            # кг/м³ (VR3)
     v_gas_base_factor: float = 8.0    # псевдоскорость газа относительно жидкости
+    p_kg_cm2: float = 5.0             # рабочее давление, кгс/см² (используется в теплообмене)
 
     def velocity(self, geom: Geometry) -> float:
         return self.m_dot_kg_s / (self.rho_vr * geom.A)
@@ -36,9 +37,46 @@ class Materials:
 @dataclass
 class TimeSetup:
     total_hours: float = 12.0
-    dt: float = 0.05
+    dt: float = 30.0
     snapshots_h: tuple[float, ...] = (0.0, 2.0, 4.0, 6.0, 8.0, 10.0, 12.0)
     contour_every_s: float = 10.0 * 60.0
+
+@dataclass
+class WallLayer:
+    """Параметры отдельного слоя стенки/футеровки."""
+
+    k: float
+    rho: float
+    cp: float
+    thickness: float
+    epsilon: float = 0.85
+
+
+@dataclass
+class WallEnergy:
+    """Настройки двухузловой модели стенки барабана."""
+
+    outer: WallLayer
+    inner: WallLayer
+    h_amb: float
+    T_amb_C: float
+    zones: int = 3
+
+
+@dataclass
+class MixtureEnergy:
+    """Эффективные параметры энергетики смеси."""
+
+    lambda_eff: float
+    cp_eff: float
+    h0_mix: float
+    alpha_mdot: float
+    alpha_p: float
+    mdot_ref: float
+    p_ref: float
+    dH_dist: float = 0.0
+    dH_coke: float = 0.0
+
 
 def defaults():
     return Geometry(), Inlet(), Walls(), Materials(), TimeSetup()
