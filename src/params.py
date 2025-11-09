@@ -4,6 +4,55 @@ from __future__ import annotations
 from dataclasses import dataclass
 from .geometry import Geometry
 
+
+@dataclass
+class WallLayer:
+    """Single wall/lining layer properties.
+
+    Parameters
+    ----------
+    k : float
+        Thermal conductivity, W/(m·K).
+    rho : float
+        Density, kg/m³.
+    cp : float
+        Heat capacity, J/(kg·K).
+    thickness : float
+        Layer thickness, m.
+    epsilon : float
+        Emissivity of the external surface.
+    """
+
+    k: float
+    rho: float
+    cp: float
+    thickness: float
+    epsilon: float = 0.85
+
+
+@dataclass
+class WallEnergy:
+    """Two-node wall energy model (outer + inner layers)."""
+
+    outer: WallLayer
+    inner: WallLayer
+    h_amb: float
+    T_amb_C: float
+    zones: int = 3
+
+
+@dataclass
+class MixtureEnergy:
+    """Effective mixture thermophysical properties."""
+
+    lambda_eff: float
+    cp_eff: float
+    h0_mix: float
+    alpha_mdot: float
+    alpha_p: float
+    mdot_ref: float
+    p_ref: float
+
 @dataclass
 class Inlet:
     T_in_C: float = 370.0

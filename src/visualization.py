@@ -160,7 +160,49 @@ def render_all_ru(results: dict, outdir: Path, exp_h_cm: float = None, exp_y_pct
             fig.savefig(outdir / 'heatmaps.png', dpi=dpi)
             plt.close(fig)
 
-        # 8) Текстовый отчёт (оставляем как было)
+        # 8) СРАВНЕНИЕ С ИЗМЕРЕНИЯМИ (если доступны)
+        ts = results.get('timeseries')
+        if isinstance(ts, dict) and ts:
+            t_s = np.asarray(ts.get('time_s', []), dtype=float)
+            if t_s.size:
+                t_h = t_s / 3600.0
+                fig, axes = plt.subplots(3, 1, figsize=(12, 10), sharex=True, constrained_layout=True)
+
+                def _plot(ax, key_model, key_meas, title):
+                    model = np.asarray(ts.get(key_model, []), dtype=float)
+                    meas = np.asarray(ts.get(key_meas, []), dtype=float)
+                    if model.size:
+                        ax.plot(t_h[: model.size], model, label='Модель', lw=2.0)
+                    if meas.size:
+                        ax.plot(t_h[: meas.size], meas, 'o', label='Измерение', ms=3.0, alpha=0.8)
+                    ax.set_ylabel('T, °C')
+                    ax.set_title(title)
+                    ax.grid(True, alpha=0.3)
+
+                _plot(axes[0], 'T_out_model_C', 'T_out_meas_C', 'Температура продукта (выход)')
+                _plot(axes[1], 'T_shell_top_model_C', 'T_shell_top_meas_C', 'Оболочка: верхнее днище')
+                _plot(axes[2], 'T_shell_bottom_model_C', 'T_shell_bottom_meas_C', 'Оболочка: нижнее днище')
+                axes[0].legend(loc='best')
+                axes[-1].set_xlabel('Время, ч')
+                fig.savefig(outdir / 'timeseries_temperatures.png', dpi=dpi)
+                plt.close(fig)
+
+                H_model = np.asarray(ts.get('H_bed_model_m', []), dtype=float)
+                fig, ax = plt.subplots(figsize=(10, 4.5), constrained_layout=True)
+                if H_model.size:
+                    ax.plot(t_h[: H_model.size], H_model * 100.0, label='Модель', lw=2.0)
+                H_meas = np.asarray(ts.get('H_bed_meas_m', []), dtype=float)
+                if H_meas.size:
+                    ax.plot(t_h[: H_meas.size], H_meas * 100.0, 'o', label='Измерение', ms=3.0)
+                ax.set_xlabel('Время, ч')
+                ax.set_ylabel('Высота, см')
+                ax.set_title('Высота коксового слоя во времени')
+                ax.grid(True, alpha=0.3)
+                ax.legend(loc='best')
+                fig.savefig(outdir / 'timeseries_height.png', dpi=dpi)
+                plt.close(fig)
+
+        # 9) Текстовый отчёт (оставляем как было)
         with open(outdir / 'results.txt', 'w', encoding='utf-8') as f:
             H_cm = results['H_bed_m'] * 100.0
             H_front_cm = results['H_front_m'] * 100.0
