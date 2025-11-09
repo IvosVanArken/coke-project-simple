@@ -102,6 +102,44 @@ def render_all_ru(results: dict, outdir: Path, exp_h_cm: float = None, exp_y_pct
         fig.savefig(outdir / 'growth.png', dpi=dpi)
         plt.close(fig)
 
+        # 4b) СРАВНЕНИЕ С ИЗМЕРЕНИЯМИ (если доступны)
+        ts = results.get('timeseries')
+        if ts:
+            t_s = np.asarray(ts.get('t_s', []), dtype=float)
+            if t_s.size:
+                t_h = t_s / 3600.0
+                fig, axes = plt.subplots(3, 1, figsize=(10, 12), sharex=True, constrained_layout=True)
+                data_pairs = [
+                    ('T_out_model_C', 'T_out_meas_C', 'Выход'),
+                    ('T_upper_model_C', 'T_upper_meas_C', 'Верхнее днище'),
+                    ('T_lower_model_C', 'T_lower_meas_C', 'Нижнее днище'),
+                ]
+                for ax_i, (model_key, meas_key, title) in zip(axes, data_pairs):
+                    model = np.asarray(ts.get(model_key, []), dtype=float)
+                    meas = np.asarray(ts.get(meas_key, []), dtype=float)
+                    ax_i.plot(t_h[:model.size], model, lw=lw, label='Модель')
+                    if meas.size:
+                        mask = np.isfinite(meas)
+                        ax_i.scatter(t_h[:meas.size][mask], meas[mask], c='k', s=18, label='Измерения')
+                    ax_i.set_ylabel('T, °C')
+                    ax_i.set_title(title)
+                    ax_i.grid(True, alpha=0.3)
+                axes[-1].set_xlabel('Время (ч)')
+                axes[0].legend()
+                fig.savefig(outdir / 'timeseries_compare.png', dpi=dpi)
+                plt.close(fig)
+
+                H = np.asarray(ts.get('H_m', []), dtype=float)
+                if H.size:
+                    fig, ax = plt.subplots(figsize=(10, 5), constrained_layout=True)
+                    ax.plot(t_h[:H.size], H, lw=lw)
+                    ax.set_xlabel('Время (ч)')
+                    ax.set_ylabel('Высота слоя (м)')
+                    ax.set_title('Высота слоя во времени (модель)')
+                    ax.grid(True, alpha=0.3)
+                    fig.savefig(outdir / 'timeseries_height.png', dpi=dpi)
+                    plt.close(fig)
+
         # 5) ВЫХОДЫ ФАЗ (серия) + 6) ФИНАЛ
         if len(cont.get('t_s', [])) > 0:
             A = float(meta['A_m2']); m_dot = float(meta['m_dot_kg_s'])
